@@ -1,0 +1,62 @@
+services:
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:8080"
+    volumes:
+      - .:/var/www/html
+    environment:
+      PHP_OPCACHE_ENABLE: "1"
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: customers
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql
+
+  redis:
+    image: redis:alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
+  queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/var/www/html
+    command: [ "php", "/var/www/html/artisan", "queue:work", "--tries=3" ]
+    stop_signal: SIGTERM
+    healthcheck:
+      # This is our native healthcheck script for the queue
+      test: [ "CMD", "healthcheck-queue" ]
+      start_period: 10s
+
+  reverb:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/var/www/html
+    command: [ "php", "/var/www/html/artisan", "reverb:start", "--port=8000" ]
+    ports:
+      - "8080:8000"
+    stop_signal: SIGTERM
+    healthcheck:
+      test: [ "CMD", "healthcheck-reverb" ]
+      start_period: 10s
+
+volumes:
+  db_data:
+  redis_data:
