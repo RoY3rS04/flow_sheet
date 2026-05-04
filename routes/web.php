@@ -27,6 +27,11 @@ Route::middleware(['auth'])->group(function () {
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/email/verify', function () {
+
+        if(Auth::user()->hasVerifiedEmail()){
+            return back();
+        }
+
         return Inertia::render('Email/Verify');
     })->name('verification.notice');
 
@@ -40,7 +45,7 @@ Route::middleware(['auth'])->group(function () {
         $request->user()->sendEmailVerificationNotification();
 
         return back()->with('message', 'Verification link sent!');
-    })->middleware(['auth', 'throttle:6,1'])->name('verification.send');
+    })->middleware(['auth', 'throttle:3,5'])->name('verification.send');
 
     Route::post('/logout', [UserController::class, 'logout'])->name('logout');
 });
