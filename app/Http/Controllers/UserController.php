@@ -3,14 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class UserController extends Controller
 {
-
     /**
      * Show the form for creating a new resource.
      */
@@ -31,23 +32,25 @@ class UserController extends Controller
         ]);
 
         $user = User::create([
-            'username' => $validated["username"],
-            'email' => $validated["email"],
-            'password' => $validated["password"],
+            'username' => $validated['username'],
+            'email' => $validated['email'],
+            'password' => $validated['password'],
         ]);
 
-        $request->session()->regenerate();
+        event(new Registered($user));
 
-        \Auth::login($user);
+        Auth::login($user);
 
-        return redirect('/');
+        return redirect()->route('verification.notice');
     }
 
-    public function login(): Response {
+    public function login(): Response
+    {
         return Inertia::render('Auth/Login');
     }
 
-    public function authenticate(Request $request): RedirectResponse {
+    public function authenticate(Request $request): RedirectResponse
+    {
         $credentials = $request->validate([
             'email' => ['required', 'string', 'email', 'max:255'],
             'password' => ['required', 'string', 'min:8'],
@@ -64,7 +67,8 @@ class UserController extends Controller
         ]);
     }
 
-    public function logout(Request $request): RedirectResponse {
+    public function logout(Request $request): RedirectResponse
+    {
         \Auth::logout();
 
         $request->session()->invalidate();

@@ -22,7 +22,17 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         \RateLimiter::for('auth', function (Request $request) {
-            return Limit::perMinute(5)->by($request->email.$request->ip());
+            return Limit::perMinute(5)
+                ->by(\Str::lower((string) $request->input('email')).'|'.$request->ip())
+                ->response(function (Request $request, array $headers) {
+                    $seconds = $headers['Retry-After'] ?? 60;
+
+                    return back()
+                        ->withErrors([
+                            'error' => "Too many attempts. Try again in {$seconds} seconds.",
+                        ])
+                        ->withInput($request->except('password'));
+                });
         });
     }
 }

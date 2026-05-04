@@ -1,73 +1,56 @@
 <script setup lang="ts">
-import NavItem from "@/components/NavItem.vue";
-import {Home, Workflow, Table, LogOut} from "lucide-vue-next";
-import {Link, usePage} from "@inertiajs/vue3";
-import {Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList} from "@/components/ui/breadcrumb/index.js";
-import {BreadcrumbSeparator} from "@/components/ui/breadcrumb";
+import { computed } from "vue";
+import AppSidebar from "@/components/AppSidebar.vue";
+import { Link, usePage } from "@inertiajs/vue3";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbList } from "@/components/ui/breadcrumb/index.js";
+import { BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { Separator } from "@/components/ui/separator";
 
-const pageUrl = usePage();
-const paths = pageUrl.url.split('/').filter(Boolean);
+const page = usePage();
 
-function stripRestOfPath(pageUrl: string, path: string) {
-    let resultPath: string = '';
-    let end = false;
+const breadcrumbPaths = computed(() => {
+    const segments = page.url.split("?")[0].split("/").filter(Boolean);
 
-    pageUrl.split('/').forEach((urlPath) => {
+    if (segments.length === 0) {
+        return [
+            {
+                label: "home",
+                href: "/",
+            },
+        ];
+    }
 
-        if (end) {
-            return resultPath;
-        }
-
-        if (urlPath === path) {
-            end = true;
-        }
-
-        resultPath += urlPath === '' ? '' : `/${urlPath}`;
-    })
-
-    return resultPath;
-}
-
+    return segments.map((segment, index) => ({
+        label: segment,
+        href: `/${segments.slice(0, index + 1).join("/")}`,
+    }));
+});
 </script>
 
 <template>
-    <div class="w-full h-full flex gap-x-3 p-2 items-center">
-        <aside class="p-4 h-full w-[20%] flex flex-col justify-between bg-red-500">
-            <header>
-                <NavItem to="/" description="Home">
-                    <Home class="icon"/>
-                </NavItem>
-            </header>
-            <section class="space-y-5">
-                <NavItem to="/datasets" description="Your Datasets">
-                    <Table class="icon"/>
-                </NavItem>
-                <NavItem to="/workflows" description="Your Workflow">
-                    <Workflow class="icon"/>
-                </NavItem>
-            </section>
-            <section>
-                <NavItem to="/" description="Log Out">
-                    <LogOut class="icon"/>
-                </NavItem>
-            </section>
-        </aside>
-        <section class="p-4 space-y-4 w-full h-full bg-green-400">
-            <div>
+    <div class="min-h-screen bg-muted/30 md:flex">
+        <AppSidebar />
+
+        <section class="flex min-h-screen flex-1 flex-col">
+            <header class="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur">
+                <AppSidebar mobile />
+                <Separator orientation="vertical" class="hidden h-4 md:block" />
+
                 <Breadcrumb>
                     <BreadcrumbList>
-                        <template v-for="(path, idx) in paths" :key="path">
+                        <template v-for="(path, idx) in breadcrumbPaths" :key="path.href">
                             <BreadcrumbItem>
-                                <Link :href="stripRestOfPath(pageUrl.url, path)">
-                                    {{ path }}
+                                <Link :href="path.href" class="capitalize">
+                                    {{ path.label }}
                                 </Link>
                             </BreadcrumbItem>
-                            <BreadcrumbSeparator v-if="idx < paths.length - 1"/>
+                            <BreadcrumbSeparator v-if="idx < breadcrumbPaths.length - 1" />
                         </template>
                     </BreadcrumbList>
                 </Breadcrumb>
-            </div>
-            <main>
+            </header>
+
+            <main class="flex-1 p-4 md:p-6">
                 <slot></slot>
             </main>
         </section>
