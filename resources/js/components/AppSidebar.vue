@@ -31,7 +31,7 @@ const workspaceItems = [
         icon: Table,
     },
     {
-        label: "Your Workflow",
+        label: "Your Workflows",
         href: "/workflows",
         icon: Workflow,
     },

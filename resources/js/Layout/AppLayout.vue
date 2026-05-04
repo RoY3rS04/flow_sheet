@@ -28,10 +28,10 @@ const breadcrumbPaths = computed(() => {
 </script>
 
 <template>
-    <div class="min-h-screen bg-muted/30 md:flex">
+    <div class="h-screen overflow-hidden bg-muted/30 md:flex">
         <AppSidebar />
 
-        <section class="flex min-h-screen flex-1 flex-col">
+        <section class="flex min-h-0 flex-1 flex-col overflow-hidden">
             <header class="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur">
                 <AppSidebar mobile />
                 <Separator orientation="vertical" class="hidden h-4 md:block" />
@@ -50,7 +50,7 @@ const breadcrumbPaths = computed(() => {
                 </Breadcrumb>
             </header>
 
-            <main class="flex-1 p-4 md:p-6">
+            <main class="min-h-0 flex-1 overflow-y-auto p-4 md:p-6">
                 <slot></slot>
             </main>
         </section>
