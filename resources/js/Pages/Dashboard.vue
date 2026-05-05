@@ -1,12 +1,17 @@
-<script setup>
+<script setup lang="ts">
 import { Button } from "@/components/ui/button/index.js";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card/index.js";
 import AppLayout from "../Layout/AppLayout.vue";
 import { ArrowRight, BarChart3, CheckCircle2, FileSpreadsheet, Play, Sparkles, Workflow } from "lucide-vue-next";
+
+const {userId} = defineProps<{
+    userId: number
+}>();
+
 </script>
 
 <template>
-    <AppLayout>
+    <AppLayout :userId="userId">
         <div class="space-y-6">
             <section class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                 <div class="space-y-1">
@@ -142,7 +147,7 @@ import { ArrowRight, BarChart3, CheckCircle2, FileSpreadsheet, Play, Sparkles, W
                                 </thead>
                                 <tbody class="divide-y divide-border/70 bg-background">
                                     <tr class="hover:bg-muted/30">
-                                        <td class="px-4 py-4">
+                                        <td class="p-4">
                                             <div>
                                                 <p class="font-medium">High-value orders</p>
                                                 <p class="text-xs text-muted-foreground">where → sort → select_columns</p>

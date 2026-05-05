@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['filename', 'file_url', 'columns', 'row_count'])]
+#[Fillable(['filename', 'file_url', 'columns', 'row_count', 'columns_count'])]
 class Dataset extends Model
 {
 

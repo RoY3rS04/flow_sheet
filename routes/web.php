@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DatasetController;
 use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
@@ -9,19 +10,23 @@ use Inertia\Response;
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/', function (): Response {
-        return Inertia::render('Dashboard');
+        return Inertia::render('Dashboard', [
+            'userId' => Auth::id()
+        ]);
     });
 
-    Route::get('/datasets', function (): Response {
-        return Inertia::render('Datasets');
-    });
+    Route::resource('datasets', DatasetController::class);
 
     Route::get('/workflows', function (): Response {
-        return Inertia::render('Workflows');
+        return Inertia::render('Workflows/Index', [
+            'userId' => Auth::id()
+        ]);
     });
 
     Route::get('/reports', function (): Response {
-        return Inertia::render('Reports');
+        return Inertia::render('Reports/Index', [
+            'userId' => Auth::id()
+        ]);
     });
 });
 

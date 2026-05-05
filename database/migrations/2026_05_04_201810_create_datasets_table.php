@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('filename');
             $table->string('file_url');
             $table->json('columns')->nullable();
+            $table->integer('columns_count')->default(0);
             $table->integer('row_count')->default(0);
             $table->timestamps();
         });
