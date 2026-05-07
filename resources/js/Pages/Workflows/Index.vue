@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import AppLayout from "../../Layout/AppLayout.vue";
 import { Play, Plus, Workflow as WorkflowIcon } from "lucide-vue-next";
 import type { Workflow } from "@/types/workflow";
+import {Link} from "@inertiajs/vue3";
 
 interface WorkflowTableItem extends Pick<Workflow, "id" | "name" | "description" | "created_at"> {
     last_run: string | null
@@ -34,9 +35,11 @@ const {userId} = defineProps<{
                                     <Play class="size-4"/>
                                     <span>Run latest</span>
                                 </Button>
-                                <Button class="h-9 rounded-xl px-4 shadow-sm">
-                                    <Plus class="size-4"/>
-                                    <span>New workflow</span>
+                                <Button class="h-9 rounded-xl px-4 shadow-sm" asChild>
+                                    <Link href="/workflows/create">
+                                        <Plus class="size-4"/>
+                                        <span>New workflow</span>
+                                    </Link>
                                 </Button>
                             </div>
                         </div>

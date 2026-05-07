@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 import {Link, router} from "@inertiajs/vue3";
 import {
     ArrowLeft,
@@ -15,6 +15,7 @@ import type { Dataset } from "@/types/Dataset/dataset";
 import AppLayout from "@/Layout/AppLayout.vue";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {AlertDialog, AlertDialogFooter, AlertDialogHeader, AlertDialogTrigger, AlertDialogContent, AlertDialogDescription, AlertDialogCancel, AlertDialogAction} from "@/components/ui/alert-dialog";
 
 type DatasetCellValue = boolean | number | string | null;
@@ -24,6 +25,8 @@ const {dataset, rows, userId} = defineProps<{
     rows?: DatasetRow[] | PaginatedDatasetRows;
     userId: number;
 }>();
+
+console.log(rows)
 
 function handleDelete() {
     router.delete(`/datasets/${dataset.id}`)
@@ -45,13 +48,13 @@ interface PaginationLink {
 
 interface PaginatedDatasetRows {
     data: DatasetRow[];
-    current_page: number;
+    currentPage: number;
     from: number | null;
-    last_page: number;
+    lastPage: number;
     links?: PaginationLink[];
-    next_page_url: string | null;
-    per_page: number;
-    prev_page_url: string | null;
+    nextPageUrl: string | null;
+    perPage: number;
+    prevPageUrl: string | null;
     to: number | null;
     total: number;
 }
@@ -76,6 +79,8 @@ const pagination = computed<PaginatedDatasetRows | null>(() => {
     return rows;
 });
 
+const rowsToLoadInput = ref("20");
+
 const columns = computed<string[]>(() => {
     const parsedColumns = parseColumns(dataset.columns);
 
@@ -95,6 +100,18 @@ const columns = computed<string[]>(() => {
 
 const hasRows = computed(() => rowItems.value.length > 0);
 
+const currentPage = computed(() => {
+    if (!pagination.value) {
+        return null;
+    }
+
+    if (pagination.value.from !== null) {
+        return Math.floor((pagination.value.from - 1) / pagination.value.perPage) + 1;
+    }
+
+    return pagination.value.currentPage;
+});
+
 const pageRange = computed(() => {
     if (!pagination.value) {
         return null;
@@ -106,6 +123,14 @@ const pageRange = computed(() => {
 
     return `${pagination.value.from.toLocaleString("en-US")}-${pagination.value.to.toLocaleString("en-US")}`;
 });
+
+watch(
+    () => pagination.value?.perPage,
+    (perPage) => {
+        rowsToLoadInput.value = String(perPage ?? rowItems.value.length ?? 20);
+    },
+    { immediate: true },
+);
 
 function parseColumns(value: Dataset["columns"] | unknown): string[] {
     if (Array.isArray(value)) {
@@ -151,6 +176,28 @@ function formatCellValue(value: DatasetCellValue | undefined): string {
     }
 
     return String(value);
+}
+
+function applyRowsToLoad(): void {
+    const parsedRowsToLoad = Number.parseInt(rowsToLoadInput.value, 10);
+
+    if (!Number.isFinite(parsedRowsToLoad) || parsedRowsToLoad < 1) {
+        rowsToLoadInput.value = String(pagination.value?.perPage ?? 20);
+        return;
+    }
+
+    router.get(
+        `/datasets/${dataset.id}`,
+        {
+            skip: 0,
+            take: parsedRowsToLoad,
+        },
+        {
+            only: ['rows'],
+            preserveScroll: true,
+            replace: true,
+        },
+    );
 }
 </script>
 
@@ -265,14 +312,28 @@ function formatCellValue(value: DatasetCellValue | undefined): string {
                         </CardDescription>
                     </div>
 
-                    <CardAction class="flex items-center gap-2">
+                    <CardAction class="flex flex-wrap items-center gap-2">
+                        <div class="flex items-center gap-2">
+                            <label for="rows-to-load" class="text-xs font-medium text-muted-foreground">
+                                Rows to load
+                            </label>
+                            <Input
+                                id="rows-to-load"
+                                v-model="rowsToLoadInput"
+                                type="number"
+                                min="1"
+                                class="h-8 w-20"
+                                @change="applyRowsToLoad"
+                                @keyup.enter="applyRowsToLoad"
+                            />
+                        </div>
                         <Button
-                            v-if="pagination?.prev_page_url"
+                            v-if="pagination?.prevPageUrl"
                             variant="outline"
                             size="sm"
                             as-child
                         >
-                            <Link :href="pagination.prev_page_url" :only="['rows']" preserve-scroll>
+                            <Link :href="pagination.prevPageUrl" :only="['rows']" preserve-scroll>
                                 <ChevronLeft class="size-4" />
                                 <span>Previous</span>
                             </Link>
@@ -287,12 +348,12 @@ function formatCellValue(value: DatasetCellValue | undefined): string {
                             <span>Previous</span>
                         </Button>
                         <Button
-                            v-if="pagination?.next_page_url"
+                            v-if="pagination?.nextPageUrl"
                             variant="outline"
                             size="sm"
                             as-child
                         >
-                            <Link :href="pagination.next_page_url" :only="['rows']" preserve-scroll>
+                            <Link :href="pagination.nextPageUrl" :only="['rows']" preserve-scroll>
                                 <span>Next</span>
                                 <ChevronRight class="size-4" />
                             </Link>
@@ -373,7 +434,7 @@ function formatCellValue(value: DatasetCellValue | undefined): string {
 
                         <div v-if="pagination" class="flex items-center gap-2">
                             <span>
-                                Page {{ pagination.current_page }} of {{ pagination.last_page }}
+                                Page {{ currentPage }} of {{ pagination.lastPage }}
                             </span>
                         </div>
                     </div>

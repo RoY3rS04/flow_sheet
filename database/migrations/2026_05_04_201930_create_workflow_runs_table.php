@@ -15,8 +15,10 @@ return new class extends Migration
     {
         Schema::create('workflow_runs', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(Workflow::class)->constrained();
-            $table->foreignIdFor(Dataset::class)->constrained();
+            $table->foreignIdFor(Workflow::class)->constrained()
+                ->cascadeOnDelete();
+            $table->foreignIdFor(Dataset::class)->constrained()
+                ->cascadeOnDelete();
             $table->string('status');
             $table->timestamp('started_at')->nullable();
             $table->timestamp('finished_at')->nullable();

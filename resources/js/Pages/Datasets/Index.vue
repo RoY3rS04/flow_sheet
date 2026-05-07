@@ -2,15 +2,29 @@
 import { Button } from "@/components/ui/button/index.js";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card/index.js";
 import AppLayout from "../../Layout/AppLayout.vue";
-import { DatabaseZap, FileSpreadsheet, Plus } from "lucide-vue-next";
+import {DatabaseZap, FileSpreadsheet, Plus, Trash2} from "lucide-vue-next";
 import type { DatasetListItem } from "@/types/Dataset/dataset-list-item.ts";
 
-import {Link} from "@inertiajs/vue3";
+import {Link, router} from "@inertiajs/vue3";
+import {AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger} from "@/components/ui/alert-dialog";
 
-const {datasets, userId} = defineProps<{
+const {
+    datasets,
+    datasetsMetadata,
+    userId
+} = defineProps<{
     datasets: DatasetListItem[],
+    datasetsMetadata: {
+        totalDatasets: number,
+        totalRows: number,
+        avgColumns: number
+    }
     userId: number
 }>()
+
+function handleDelete(datasetId: string) {
+    router.delete(`/datasets/${datasetId}`)
+}
 
 function formatDate(value: string): string {
     return new Date(value).toLocaleDateString("en-US", {
@@ -51,7 +65,7 @@ function formatDate(value: string): string {
                             Uploaded files
                         </p>
                         <p class="mt-1 text-lg font-semibold tracking-tight">
-                            {{  }}
+                            {{ datasetsMetadata.totalDatasets }}
                         </p>
                     </div>
 
@@ -60,7 +74,7 @@ function formatDate(value: string): string {
                             Total rows
                         </p>
                         <p class="mt-1 text-lg font-semibold tracking-tight">
-                            {{ totalRowCount?.toLocaleString("en-US") }}
+                            {{ datasetsMetadata.totalRows }}
                         </p>
                     </div>
 
@@ -69,7 +83,7 @@ function formatDate(value: string): string {
                             Avg. columns
                         </p>
                         <p class="mt-1 text-lg font-semibold tracking-tight">
-                            {{  }}
+                            {{ datasetsMetadata.avgColumns.toFixed(2) }}
                         </p>
                     </div>
                 </div>
@@ -137,13 +151,31 @@ function formatDate(value: string): string {
                                                     View
                                                 </Link>
                                             </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                class="rounded-lg text-destructive hover:text-destructive"
-                                            >
-                                                Delete
-                                            </Button>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="outline" size="sm" class="text-destructive cursor-pointer hover:text-destructive">
+                                                        <Trash2 class="size-4"/>
+                                                        <span>Delete</span>
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            This action cannot be undone. This will permanently delete your
+                                                            dataset from our servers.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction asChild>
+                                                            <Button @click="handleDelete(dataset.id)">
+                                                                Delete
+                                                            </Button>
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
                                         </div>
                                     </td>
                                 </tr>

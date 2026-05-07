@@ -5,6 +5,12 @@
 @import 'tailwindcss';
 @import "tw-animate-css";
 
+/* these are necessary styles for vue flow */
+@import '@vue-flow/core/dist/style.css';
+
+/* this contains the default theme, these are optional styles */
+@import '@vue-flow/core/dist/theme-default.css';
+
 @custom-variant dark (&:is(.dark *));
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';

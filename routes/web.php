@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DatasetController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\WorkflowController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -11,21 +12,18 @@ use Inertia\Response;
 Route::middleware(['auth'])->group(function () {
     Route::get('/', function (): Response {
         return Inertia::render('Dashboard', [
-            'userId' => Auth::id()
+            'userId' => Auth::id(),
         ]);
     });
 
-    Route::resource('datasets', DatasetController::class);
+    Route::resource('/datasets', DatasetController::class)
+        ->except(['edit', 'update']);
 
-    Route::get('/workflows', function (): Response {
-        return Inertia::render('Workflows/Index', [
-            'userId' => Auth::id()
-        ]);
-    });
+    Route::resource('/workflows', WorkflowController::class);
 
     Route::get('/reports', function (): Response {
         return Inertia::render('Reports/Index', [
-            'userId' => Auth::id()
+            'userId' => Auth::id(),
         ]);
     });
 });
@@ -33,7 +31,7 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('/email/verify', function () {
 
-        if(Auth::user()->hasVerifiedEmail()){
+        if (Auth::user()->hasVerifiedEmail()) {
             return back();
         }
 

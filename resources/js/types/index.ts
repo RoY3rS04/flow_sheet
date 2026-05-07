@@ -4,4 +4,13 @@ export type { User } from "@/types/user"
 export type { Workflow } from "@/types/workflow"
 export type { WorkflowEdge } from "@/types/workflow-edge"
 export type { WorkflowNode } from "@/types/workflow-node"
+export type {
+    WorkflowFilterCondition,
+    WorkflowFilterOperator,
+    WorkflowFilteringConfig,
+    WorkflowLimitingConfig,
+    WorkflowOperationConfig,
+    WorkflowOperationKey,
+    WorkflowSelectingConfig,
+} from "@/types/workflow-operation"
 export type { WorkflowRun } from "@/types/workflow-run"
