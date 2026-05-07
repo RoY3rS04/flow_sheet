@@ -31,26 +31,20 @@ class AnalyseFile implements ShouldQueue
     public function handle(): void
     {
 
-        $rows = SimpleExcelReader::create(
+        $reader = SimpleExcelReader::create(
             Storage::disk('public')->path($this->file_url)
-        )->getRows();
+        );
 
-        $row_count = 0;
-        $columns = [];
-        $rows->each(function (array $rowProperties) use (&$columns, &$row_count) {
-
-            $columns = array_keys($rowProperties);
-
-            $row_count++;
-        });
+        $headers = $reader->getHeaders();
+        $rows = $reader->getRows();
 
         $dataset = $this->user->datasets()
             ->create([
                 'filename' => $this->filename,
                 'file_url' => $this->file_url,
-                'columns' => json_encode($columns),
-                'row_count' => $row_count,
-                'columns_count' => count($columns),
+                'columns' => json_encode($headers),
+                'row_count' => $rows->count(),
+                'columns_count' => count($headers),
             ]);
 
         DatasetSaved::dispatch($this->user, $dataset);

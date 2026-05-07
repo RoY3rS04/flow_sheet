@@ -36,7 +36,7 @@ class DatasetController extends Controller
     public function store(Request $request): RedirectResponse {
 
         $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls,csv'
+            'file' => 'required|file|mimes:xlsx,csv'
         ]);
 
         $file = $request->file('file');

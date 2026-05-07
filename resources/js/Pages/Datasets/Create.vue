@@ -16,13 +16,25 @@ const {userId} = defineProps<{
 
 function handleDrop(e) {
 
-    if(!e.dataTransfer.files[0].type.includes('csv') &&
-        !e.dataTransfer.files[0].type.includes('xlsx')) {
+    const allowedFileExtensions = ['.csv', '.xlsx']
+
+    if(
+        !allowedFileExtensions.some(
+            (extension: string) => e.dataTransfer.files[0].name.toLowerCase().endsWith(extension)
+        )
+    ) {
         return;
     }
 
     input.files = e.dataTransfer.files;
-    inputFilled.value = true
+    input.dispatchEvent(new Event('change', {
+        bubbles: true
+    }))
+}
+
+function onSubmit() {
+    input.files = null;
+    inputFilled.value = false;
 }
 
 onMounted(() => {
@@ -59,8 +71,8 @@ onMounted(() => {
                 <div id="target" @dragover.prevent @dragenter.prevent @drop.prevent="handleDrop" class="rounded-md h-full w-full flex items-center justify-center border-3 border-dashed">
                     <span class="font-semibold text-xl">Drag and drop your file here</span>
                 </div>
-                <Form @submit="() => input.files = null" id="submit-file" action="/datasets" method="post">
-                    <Input @change.prevent="() => inputFilled = !inputFilled" hidden type="file" id="file" name="file"></Input>
+                <Form @submit="onSubmit" id="submit-file" action="/datasets" method="post">
+                    <Input @change.prevent="() => inputFilled = input.files.length > 0" hidden type="file" id="file" name="file"></Input>
                 </Form>
             </CardContent>
         </Card>
