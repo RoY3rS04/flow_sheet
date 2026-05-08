@@ -14,6 +14,8 @@ const { userId } = defineProps<{
     userId: number
 }>();
 
+localStorage.setItem('userId', userId.toString())
+
 interface ToastMessage {
     title: string
     description: string

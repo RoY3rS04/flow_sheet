@@ -6,7 +6,17 @@ import {DatabaseZap, FileSpreadsheet, Plus, Trash2} from "lucide-vue-next";
 import type { DatasetListItem } from "@/types/Dataset/dataset-list-item.ts";
 
 import {Link, router} from "@inertiajs/vue3";
-import {AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger} from "@/components/ui/alert-dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const {
     datasets,

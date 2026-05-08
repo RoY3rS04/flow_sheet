@@ -19,14 +19,16 @@ import { Input } from "@/components/ui/input";
 import {AlertDialog, AlertDialogFooter, AlertDialogHeader, AlertDialogTrigger, AlertDialogContent, AlertDialogDescription, AlertDialogCancel, AlertDialogAction} from "@/components/ui/alert-dialog";
 
 type DatasetCellValue = boolean | number | string | null;
+type DatasetColumn = {
+    name: string;
+    type: string;
+};
 
 const {dataset, rows, userId} = defineProps<{
     dataset: Dataset;
     rows?: DatasetRow[] | PaginatedDatasetRows;
     userId: number;
 }>();
-
-console.log(rows)
 
 function handleDelete() {
     router.delete(`/datasets/${dataset.id}`)
@@ -81,7 +83,7 @@ const pagination = computed<PaginatedDatasetRows | null>(() => {
 
 const rowsToLoadInput = ref("20");
 
-const columns = computed<string[]>(() => {
+const columns = computed<DatasetColumn[]>(() => {
     const parsedColumns = parseColumns(dataset.columns);
 
     if (parsedColumns.length > 0) {
@@ -92,7 +94,10 @@ const columns = computed<string[]>(() => {
     const firstRowValues = firstRow ? extractRowValues(firstRow) : [];
 
     if (!Array.isArray(firstRowValues) && firstRowValues) {
-        return Object.keys(firstRowValues);
+        return Object.keys(firstRowValues).map((column) => ({
+            name: column,
+            type: "string",
+        }));
     }
 
     return [];
@@ -132,9 +137,11 @@ watch(
     { immediate: true },
 );
 
-function parseColumns(value: Dataset["columns"] | unknown): string[] {
+function parseColumns(value: Dataset["columns"] | unknown): DatasetColumn[] {
     if (Array.isArray(value)) {
-        return value.map((column) => String(column));
+        return value
+            .map((column) => normalizeColumn(column))
+            .filter((column): column is DatasetColumn => column !== null);
     }
 
     if (typeof value !== "string" || value.length === 0) {
@@ -145,25 +152,51 @@ function parseColumns(value: Dataset["columns"] | unknown): string[] {
         const parsedValue = JSON.parse(value);
 
         return Array.isArray(parsedValue)
-            ? parsedValue.map((column) => String(column))
+            ? parsedValue
+                .map((column) => normalizeColumn(column))
+                .filter((column): column is DatasetColumn => column !== null)
             : [];
     } catch {
         return [];
     }
 }
 
+function normalizeColumn(value: unknown): DatasetColumn | null {
+    if (typeof value === "string" && value.length > 0) {
+        return {
+            name: value,
+            type: "string",
+        };
+    }
+
+    if (
+        typeof value === "object"
+        && value !== null
+        && "name" in value
+        && typeof value.name === "string"
+        && value.name.length > 0
+    ) {
+        return {
+            name: value.name,
+            type: "type" in value && typeof value.type === "string" ? value.type : "string",
+        };
+    }
+
+    return null;
+}
+
 function extractRowValues(row: DatasetRow): DatasetCellValue[] | Record<string, DatasetCellValue> {
     return row.values ?? row.cells ?? [];
 }
 
-function getCellValue(row: DatasetRow, column: string, columnIndex: number): string {
+function getCellValue(row: DatasetRow, columnName: string, columnIndex: number): string {
     const rowValues = extractRowValues(row);
 
     if (Array.isArray(rowValues)) {
         return formatCellValue(rowValues[columnIndex]);
     }
 
-    return formatCellValue(rowValues[column]);
+    return formatCellValue(rowValues[columnName]);
 }
 
 function formatCellValue(value: DatasetCellValue | undefined): string {
@@ -199,6 +232,7 @@ function applyRowsToLoad(): void {
         },
     );
 }
+
 </script>
 
 <template>
@@ -380,10 +414,10 @@ function applyRowsToLoad(): void {
                                     </th>
                                     <th
                                         v-for="column in columns"
-                                        :key="column"
+                                        :key="column.name"
                                         class="min-w-44 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em]"
                                     >
-                                        <span class="line-clamp-1">{{ column }}</span>
+                                        <span class="line-clamp-1">{{ column.name }}</span>
                                     </th>
                                 </tr>
                             </thead>
@@ -399,11 +433,11 @@ function applyRowsToLoad(): void {
                                     </td>
                                     <td
                                         v-for="(column, columnIndex) in columns"
-                                        :key="`${row.id ?? row.row_number}-${column}`"
+                                        :key="`${row.id ?? row.row_number}-${column.name}`"
                                         class="max-w-72 px-4 py-3 align-top"
                                     >
                                         <span class="block truncate">
-                                            {{ getCellValue(row, column, columnIndex) }}
+                                            {{ getCellValue(row, column.name, columnIndex) }}
                                         </span>
                                     </td>
                                 </tr>

@@ -1,24 +1,26 @@
 <script setup>
 
-import {SquareArrowOutUpRight} from "lucide-vue-next";
+import {SquareArrowRightExitIcon} from "lucide-vue-next";
 import {Item, ItemActions, ItemContent, ItemDescription, ItemTitle} from "@/components/ui/item/index.js";
 import {Input} from "@/components/ui/input/index.js";
 import {ref} from "vue";
+import {Handle, Position} from "@vue-flow/core";
 
 const outputFilename = ref('')
 </script>
 
 <template>
-    <Item class="cursor-grab" variant="outline">
+    <Item class="cursor-grab bg-white" variant="outline">
         <ItemContent>
             <ItemTitle>
-                <SquareArrowOutUpRight :size="16"></SquareArrowOutUpRight>
+                <SquareArrowRightExitIcon :size="16"></SquareArrowRightExitIcon>
                 Output
             </ItemTitle>
             <div>
                 <Input v-model="outputFilename"></Input>
             </div>
         </ItemContent>
+        <Handle type="target" :position="Position.Top"/>
     </Item>
 </template>
 

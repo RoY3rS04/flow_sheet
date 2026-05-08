@@ -13,3 +13,9 @@ export interface Workflow extends EloquentModel {
     workflow_runs?: WorkflowRun[]
     edges?: WorkflowEdge[]
 }
+
+export const AvailableOperatorsForColumnType = {
+    string: ['>', '<', '>=', '<=', '=', 'startsWith', 'endsWith', 'contains', 'notNull'],
+    integer: ['>', '<', '>=', '<=', '=', 'notNull'],
+    float: ['>', '<', '>=', '<=', '=', 'notNull'],
+}

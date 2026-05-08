@@ -8,33 +8,78 @@ import {Form} from "@inertiajs/vue3";
 import {Field, FieldGroup, FieldLabel, FieldSet} from "@/components/ui/field";
 import {Input} from "@/components/ui/input";
 import {Textarea} from "@/components/ui/textarea";
-import {ref} from "vue";
+import {onUnmounted, ref} from "vue";
 import type {Node, Edge} from "@vue-flow/core";
-import {VueFlow} from "@vue-flow/core";
+import {VueFlow, useVueFlow} from "@vue-flow/core";
 import {Background} from "@vue-flow/background";
 import {MiniMap} from "@vue-flow/minimap";
 import {ResizableHandle, ResizablePanel, ResizablePanelGroup} from "@/components/ui/resizable";
 import {Item, ItemActions, ItemContent, ItemDescription, ItemTitle} from "@/components/ui/item";
 import {ScrollArea} from "@/components/ui/scroll-area";
+import InputNode from "@/Pages/Workflows/Nodes/InputNode.vue";
+import FilterNode from "@/Pages/Workflows/Nodes/FilterNode.vue";
+import SelectNode from "@/Pages/Workflows/Nodes/SelectNode.vue";
+import LimitNode from "@/Pages/Workflows/Nodes/LimitNode.vue";
+import OutputNode from "@/Pages/Workflows/Nodes/OutputNode.vue";
+import {useWorkflowStore} from "@/stores/workflow";
 
 const {userId} = defineProps<{
     userId: number
 }>()
 
-const nodes = ref<Node[]>([])
+const {
+    addNodes,
+    screenToFlowCoordinate,
+    onNodesInitialized,
+    updateNode
+} = useVueFlow()
 
-// these are our edges
-const edges = ref<Edge[]>([])
+const {
+    nodes,
+    edges,
+    addNode,
+    addEdge
+} = useWorkflowStore()
 
 function onDrop(e) {
-    nodes.value.push({
-        position: {
-            x: e.x,
-            y: e.y
-        },
-        type: 'input',
-        id: '1'
-    })
+
+    if(!e.dataTransfer) {
+        return
+    }
+
+    const nodeType = e.dataTransfer.getData('nodeType')
+
+    const node = {
+        position: screenToFlowCoordinate({
+            x: e.clientX,
+            y: e.clientY
+        }),
+        type: nodeType,
+        id: self.crypto.randomUUID(),
+    }
+
+    addNode(node)
+}
+
+function onDragStart(e: DragEvent) {
+
+    const target = e.currentTarget as HTMLElement|null
+
+    if (!target || !e.dataTransfer) {
+        return
+    }
+
+    e.dataTransfer.setData('nodeType', target.dataset.nodeType ?? '')
+    e.dataTransfer.effectAllowed = 'move'
+}
+
+onUnmounted(() => {
+    nodes.value = [];
+    edges.value = [];
+})
+
+function handleConnect(e) {
+    console.log(e)
 }
 
 </script>
@@ -65,7 +110,27 @@ function onDrop(e) {
                 >
                     <ResizablePanel :defaultSize="60">
                         <div @drop.prevent="onDrop" @dragover.prevent>
-                            <VueFlow class="col-start-1 col-span-3 border-1 rounded-md" :nodes="nodes" :edges="edges">
+                            <VueFlow
+                                class="col-start-1 col-span-3 border-1 rounded-md"
+                                :nodes="nodes"
+                                :edges="edges"
+                                @connect="handleConnect"
+                            >
+                                <template #node-input-file="specialNodeProps">
+                                    <InputNode :nodeProps="specialNodeProps" />
+                                </template>
+                                <template #node-filter="specialNodeProps">
+                                    <FilterNode v-bind="specialNodeProps" />
+                                </template>
+                                <template #node-select="specialNodeProps">
+                                    <SelectNode v-bind="specialNodeProps" />
+                                </template>
+                                <template #node-limit="specialNodeProps">
+                                    <LimitNode v-bind="specialNodeProps" />
+                                </template>
+                                <template #node-output-file="specialNodeProps">
+                                    <OutputNode v-bind="specialNodeProps" />
+                                </template>
                                 <Background variant="lines"/>
                                 <MiniMap pannable zoomable/>
                             </VueFlow>
@@ -104,7 +169,7 @@ function onDrop(e) {
                                     <h4 class="text-xl font-semibold">Available Nodes</h4>
                                 </div>
                                 <div class="space-y-3">
-                                    <Item class="cursor-grab" draggable="true" id="input_node" variant="outline">
+                                    <Item @dragstart="onDragStart" data-node-type="input-file" class="cursor-grab" draggable="true" id="input_node" variant="outline">
                                         <ItemContent>
                                             <ItemTitle>
                                                 <SquareArrowRightEnterIcon :size="16"></SquareArrowRightEnterIcon>
@@ -118,7 +183,7 @@ function onDrop(e) {
                                             </ItemActions>
                                         </ItemContent>
                                     </Item>
-                                    <Item class="cursor-grab" draggable="true" id="filter_node" variant="outline">
+                                    <Item @dragstart="onDragStart" data-node-type="filter" class="cursor-grab" draggable="true" id="filter_node" variant="outline">
                                         <ItemContent>
                                             <ItemTitle>
                                                 <FunnelIcon :size="16"></FunnelIcon>
@@ -132,7 +197,7 @@ function onDrop(e) {
                                             </ItemActions>
                                         </ItemContent>
                                     </Item>
-                                    <Item class="cursor-grab" draggable="true" id="select_node" variant="outline">
+                                    <Item @dragstart="onDragStart" data-node-type="select" class="cursor-grab" draggable="true" id="select_node" variant="outline">
                                         <ItemContent>
                                             <ItemTitle>
                                                 <Grid2X2Check :size="16"></Grid2X2Check>
@@ -146,7 +211,7 @@ function onDrop(e) {
                                             </ItemActions>
                                         </ItemContent>
                                     </Item>
-                                    <Item class="cursor-grab" draggable="true" id="limit_node" variant="outline">
+                                    <Item @dragstart="onDragStart" data-node-type="limit" class="cursor-grab" draggable="true" id="limit_node" variant="outline">
                                         <ItemContent>
                                             <ItemTitle>
                                                 <Rows4Icon :size="16"></Rows4Icon>
@@ -160,7 +225,7 @@ function onDrop(e) {
                                             </ItemActions>
                                         </ItemContent>
                                     </Item>
-                                    <Item class="cursor-grab" draggable="true" id="output_node" variant="outline">
+                                    <Item @dragstart="onDragStart" data-node-type="output-file" class="cursor-grab" draggable="true" id="output_node" variant="outline">
                                         <ItemContent>
                                             <ItemTitle>
                                                 <SquareArrowRightExitIcon :size="16"></SquareArrowRightExitIcon>

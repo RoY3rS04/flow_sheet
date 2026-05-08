@@ -16,6 +16,8 @@ Route::middleware(['auth'])->group(function () {
         ]);
     });
 
+    Route::get('/datasets/simple', [DatasetController::class, 'simple']);
+    Route::get('/datasets/{dataset}/columns', [DatasetController::class, 'columns']);
     Route::resource('/datasets', DatasetController::class)
         ->except(['edit', 'update']);
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Jobs\AnalyseFile;
 use App\Models\Dataset;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -87,23 +88,26 @@ class DatasetController extends Controller
             ->map(function ($row, $idx) use ($skip) {
                 return [
                     'values' => [
-                        ...$row
+                        ...$row,
                     ],
                     'row_number' => $skip + $idx + 1,
                 ];
             });
 
+        $rowData = $rows->values()->all();
+        $loadedRowCount = count($rowData);
+
         return Inertia::render('Datasets/Show', [
             'dataset' => $dataset,
             'rows' => [
-                'data' => $rows->toArray(),
-                'currentPage' => ($rows->count() - $skip) / $take,
-                'from' => $skip + 1,
+                'data' => $rowData,
+                'currentPage' => $loadedRowCount > 0 ? (int) floor($skip / $take) + 1 : 1,
+                'from' => $loadedRowCount > 0 ? $skip + 1 : null,
                 'lastPage' => (int) ceil($dataset->row_count / $take),
-                'nextPageUrl' => $request->url() . '?skip=' . ($skip + $take) . '&take=' . $take,
+                'nextPageUrl' => $request->url().'?skip='.($skip + $take).'&take='.$take,
                 'perPage' => $take,
-                'prevPageUrl' => $request->url() . '?skip=' . ($skip - $take) . '&take=' . $take,
-                'to' => $skip + $take,
+                'prevPageUrl' => $request->url().'?skip='.($skip - $take).'&take='.$take,
+                'to' => $loadedRowCount > 0 ? $skip + $loadedRowCount : null,
                 'total' => $dataset->row_count,
             ],
             'userId' => \Auth::id(),
@@ -112,12 +116,33 @@ class DatasetController extends Controller
 
     public function destroy(Dataset $dataset): RedirectResponse
     {
+        \Storage::disk('public')->delete($dataset->file_url);
+
         $dataset->delete();
 
         return to_route('datasets.index')->with([
             'message' => [
                 'title' => 'Your dataset has been deleted',
             ],
+        ]);
+    }
+
+    public function simple(): JsonResponse
+    {
+        $user = auth()->user();
+
+        return response()->json([
+            'datasets' => $user->datasets()
+                ->select('id', 'filename')
+                ->get(),
+        ]);
+    }
+
+    public function columns(Dataset $dataset): JsonResponse
+    {
+
+        return response()->json([
+            'columns' => $dataset->columns,
         ]);
     }
 }

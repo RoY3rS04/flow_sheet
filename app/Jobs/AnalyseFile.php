@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Events\DatasetSaved;
 use App\Models\User;
+use DateTimeInterface;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Storage;
@@ -20,8 +21,7 @@ class AnalyseFile implements ShouldQueue
         private User $user,
         private string $filename,
         private string $file_url,
-    )
-    {
+    ) {
         //
     }
 
@@ -30,23 +30,104 @@ class AnalyseFile implements ShouldQueue
      */
     public function handle(): void
     {
+        $path = Storage::disk('public')->path($this->file_url);
+        $headers = SimpleExcelReader::create($path)->getHeaders();
+        $sampleRows = SimpleExcelReader::create($path)
+            ->take(25)
+            ->getRows()
+            ->all();
 
-        $reader = SimpleExcelReader::create(
-            Storage::disk('public')->path($this->file_url)
-        );
+        $columns = array_map(function (string $header) use ($sampleRows) {
+            return [
+                'name' => $header,
+                'type' => $this->inferColumnType($sampleRows, $header),
+            ];
+        }, $headers);
 
-        $headers = $reader->getHeaders();
-        $rows = $reader->getRows();
+        $rowCount = SimpleExcelReader::create($path)->getRows()->count();
 
         $dataset = $this->user->datasets()
             ->create([
                 'filename' => $this->filename,
                 'file_url' => $this->file_url,
-                'columns' => json_encode($headers),
-                'row_count' => $rows->count(),
-                'columns_count' => count($headers),
+                'columns' => json_encode($columns),
+                'row_count' => $rowCount,
+                'columns_count' => count($columns),
             ]);
 
         DatasetSaved::dispatch($this->user, $dataset);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $rows
+     */
+    private function inferColumnType(array $rows, string $header): string
+    {
+        $types = collect($rows)
+            ->map(fn (array $row): string => $this->inferValueType($row[$header] ?? null))
+            ->reject(fn (string $type): bool => $type === 'null')
+            ->unique()
+            ->values();
+
+        if ($types->isEmpty()) {
+            return 'string';
+        }
+
+        if ($types->count() === 1) {
+            return $types->first();
+        }
+
+        if ($types->every(fn (string $type): bool => in_array($type, ['integer', 'float'], true))) {
+            return 'float';
+        }
+
+        return 'string';
+    }
+
+    private function inferValueType(mixed $value): string
+    {
+        if ($value === null) {
+            return 'null';
+        }
+
+        if ($value instanceof DateTimeInterface) {
+            return 'datetime';
+        }
+
+        if (is_bool($value)) {
+            return 'boolean';
+        }
+
+        if (is_int($value)) {
+            return 'integer';
+        }
+
+        if (is_float($value)) {
+            return 'float';
+        }
+
+        if (! is_string($value)) {
+            return get_debug_type($value);
+        }
+
+        $trimmed = trim($value);
+
+        if ($trimmed === '') {
+            return 'null';
+        }
+
+        if (in_array(strtolower($trimmed), ['true', 'false', 'yes', 'no'], true)) {
+            return 'boolean';
+        }
+
+        if (preg_match('/^-?(?:0|[1-9]\d*)$/', $trimmed) === 1) {
+            return 'integer';
+        }
+
+        if (preg_match('/^-?(?:(?:0|[1-9]\d*)\.\d+|\d+(?:\.\d+)?e[+-]?\d+)$/i', $trimmed) === 1) {
+            return 'float';
+        }
+
+        return 'string';
     }
 }
