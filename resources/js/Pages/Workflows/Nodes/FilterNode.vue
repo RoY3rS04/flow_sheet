@@ -50,11 +50,16 @@ async function getDatasetColumns(datasetId: number) {
 }
 
 watch(getInputNode(), () => {
+
+    columnValue.value = '';
+    operatorType.value = '';
+    operatorValue.value = '';
+
     getDatasetColumns(Number(getInputNode().data.datasetId))
 })
 
 watch(columnValue, () => {
-    operatorType.value = columns.value.find(col => col.name === columnValue.value).type;
+    operatorType.value = columns.value.find(col => col.name === columnValue.value)?.type ?? '';
 });
 
 onMounted(() => {

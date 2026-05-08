@@ -3,10 +3,25 @@
 import {SquareArrowRightExitIcon} from "lucide-vue-next";
 import {Item, ItemActions, ItemContent, ItemDescription, ItemTitle} from "@/components/ui/item/index.js";
 import {Input} from "@/components/ui/input/index.js";
-import {ref} from "vue";
+import {ref, watch} from "vue";
 import {Handle, Position} from "@vue-flow/core";
+import {useWorkflowStore} from "@/stores/workflow.ts";
 
 const outputFilename = ref('')
+
+const {
+    getOutputNode,
+    changeNodeState
+} = useWorkflowStore();
+
+watch(outputFilename, () => {
+    changeNodeState(getOutputNode().id, {
+        filename: outputFilename
+    })
+
+    console.log(getOutputNode())
+});
+
 </script>
 
 <template>
