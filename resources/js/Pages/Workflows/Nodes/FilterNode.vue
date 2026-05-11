@@ -19,6 +19,7 @@ import {Handle, Position} from "@vue-flow/core";
 import {useWorkflowStore} from "@/stores/workflow";
 import {AvailableOperatorsForColumnType} from "@/types/workflow";
 import {Input} from "@/components/ui/input";
+import {ItemHeader} from "@/components/ui/item";
 
 const openColumn = ref<boolean>(false);
 const openOperator = ref<boolean>(false);
@@ -34,28 +35,30 @@ const {
     getInputNode
 } = useWorkflowStore();
 
-const columns = ref<{
-    name: string
-    type: string
-}[]>([])
+const columns = ref<Column[]>([])
 
-async function getDatasetColumns(datasetId: number) {
+type Column = {
+    name: string,
+    type: string
+}
+
+async function getDatasetColumns(datasetId: number): Promise<Column[]> {
     const data = await http.get(`/datasets/${datasetId}/columns`, {
         onError: errors => {
             console.log(errors);
         }
     });
 
-    columns.value = JSON.parse(data.columns)
+    return JSON.parse(data.columns) as Column[]
 }
 
-watch(getInputNode(), () => {
+watch(getInputNode(), async () => {
 
     columnValue.value = '';
     operatorType.value = '';
     operatorValue.value = '';
 
-    getDatasetColumns(Number(getInputNode().data.datasetId))
+    columns.value = await getDatasetColumns(Number(getInputNode().data.datasetId))
 })
 
 watch(columnValue, () => {
@@ -66,7 +69,7 @@ onMounted(() => {
 
     const inputNode = getInputNode()
 
-    if (!inputNode.data) {
+    if (!inputNode?.data) {
         return
     }
 
@@ -77,12 +80,12 @@ onMounted(() => {
 
 <template>
     <Item class="cursor-grab bg-white" id="filter_node" variant="outline">
-        <ItemContent>
+        <ItemHeader>
             <ItemTitle>
                 <FunnelIcon :size="16"></FunnelIcon>
                 Filter
             </ItemTitle>
-        </ItemContent>
+        </ItemHeader>
         <ItemContent>
             <Popover v-model:openColumn="openColumn">
                 <PopoverTrigger as-child>
@@ -144,7 +147,7 @@ onMounted(() => {
                 </PopoverTrigger>
                 <PopoverContent>
                     <Command>
-                        <CommandInput placeholder="Search column..." />
+                        <CommandInput placeholder="Search operator..." />
                         <CommandList>
                             <CommandEmpty>No operators found.</CommandEmpty>
                             <CommandGroup>

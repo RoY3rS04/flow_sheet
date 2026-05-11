@@ -17,6 +17,7 @@ import {onMounted, ref, watch} from "vue";
 import {useHttp} from "@inertiajs/vue3";
 import {Handle, NodeProps, Position} from "@vue-flow/core";
 import {useWorkflowStore} from "@/stores/workflow";
+import {ItemHeader} from "@/components/ui/item";
 
 const open = ref<boolean>(false);
 const value = ref<number>(0);
@@ -58,12 +59,12 @@ onMounted(getDatasets)
 
 <template>
     <Item class="cursor-grab bg-white" id="filter_node" variant="outline">
-        <ItemContent>
+        <ItemHeader>
             <ItemTitle>
                 <SquareArrowRightEnterIcon :size="16"></SquareArrowRightEnterIcon>
                 Input
             </ItemTitle>
-        </ItemContent>
+        </ItemHeader>
         <ItemContent>
             <Popover v-model:open="open">
                 <PopoverTrigger as-child>

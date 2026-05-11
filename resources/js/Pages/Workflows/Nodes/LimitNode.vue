@@ -1,22 +1,24 @@
 <script setup>
 
-import {FunnelIcon} from "lucide-vue-next";
-import {Item, ItemActions, ItemContent, ItemDescription, ItemTitle} from "@/components/ui/item/index.js";
+import {Rows4Icon} from "lucide-vue-next";
+import {Item, ItemContent, ItemHeader, ItemTitle} from "@/components/ui/item/index.js";
 import {Input} from "@/components/ui/input/index.js";
+import {Handle, Position} from "@vue-flow/core";
 </script>
 
 <template>
-    <Item class="cursor-grab" draggable="true" id="filter_node" variant="outline">
-        <ItemContent>
+    <Item class="cursor-grab bg-white" draggable="true" id="filter_node" variant="outline">
+        <ItemHeader>
             <ItemTitle>
-                <FunnelIcon :size="16"></FunnelIcon>
-                <Input name="column_name"></Input>
+                <Rows4Icon :size="16"></Rows4Icon>
+                Limit
             </ItemTitle>
-            <ItemDescription>
-                Choose a column, operator, and value to keep only matching rows.
-            </ItemDescription>
+        </ItemHeader>
+        <ItemContent>
+            <Input type="number" min="1" name="limit" placeholder="Limit the rows you want to get from the workflow"></Input>
         </ItemContent>
     </Item>
+    <Handle type="target" :position="Position.Top"></Handle>
 </template>
 
 <style scoped>
