@@ -18,8 +18,6 @@ watch(outputFilename, () => {
     changeNodeState(getOutputNode().id, {
         filename: outputFilename
     })
-
-    console.log(getOutputNode())
 });
 
 </script>
@@ -35,7 +33,7 @@ watch(outputFilename, () => {
                 <Input v-model="outputFilename"></Input>
             </div>
         </ItemContent>
-        <Handle type="target" :position="Position.Top"/>
+        <Handle id="output_in" type="target" :position="Position.Top"/>
     </Item>
 </template>
 

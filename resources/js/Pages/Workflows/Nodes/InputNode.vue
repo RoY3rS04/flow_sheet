@@ -111,7 +111,7 @@ onMounted(getDatasets)
                 </PopoverContent>
             </Popover>
         </ItemContent>
-        <Handle type="source" :position="Position.Bottom"/>
+        <Handle id="input_out" type="source" :position="Position.Bottom"/>
     </Item>
 </template>
 

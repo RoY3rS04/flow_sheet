@@ -4,12 +4,12 @@ import AppLayout from "@/Layout/AppLayout.vue";
 import {Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import { SaveIcon, WorkflowIcon, FunnelIcon, Grid2X2Check, Rows4Icon, ShapesIcon, SquareArrowRightEnterIcon, SquareArrowRightExitIcon } from "lucide-vue-next";
-import {Form} from "@inertiajs/vue3";
+import {Form, useHttp} from "@inertiajs/vue3";
 import {Field, FieldGroup, FieldLabel, FieldSet} from "@/components/ui/field";
 import {Input} from "@/components/ui/input";
 import {Textarea} from "@/components/ui/textarea";
-import {onUnmounted, ref} from "vue";
-import type {Node, Edge} from "@vue-flow/core";
+import {computed, onUnmounted, ref} from "vue";
+import type {Node, Edge, NodeChange} from "@vue-flow/core";
 import {VueFlow, useVueFlow} from "@vue-flow/core";
 import {Background} from "@vue-flow/background";
 import {MiniMap} from "@vue-flow/minimap";
@@ -28,18 +28,28 @@ const {userId} = defineProps<{
 }>()
 
 const {
-    addNodes,
     screenToFlowCoordinate,
-    onNodesInitialized,
-    updateNode
 } = useVueFlow()
 
 const {
     nodes,
     edges,
     addNode,
-    addEdge
+    addEdge,
 } = useWorkflowStore()
+
+const workflowName = ref<string>('');
+const workflowDescription = ref<string>('');
+
+const http = useHttp({
+    workflowInfo: {
+        name: '',
+        description: '',
+    },
+    nodes: [],
+    edges: [],
+})
+
 
 function onDrop(e) {
 
@@ -78,8 +88,68 @@ onUnmounted(() => {
     edges.value = [];
 })
 
+function onSubmit(e) {
+    http.workflowInfo = {
+        name: workflowName.value,
+        description: workflowDescription.value,
+    }
+
+    http.nodes = nodes.value.map((node) => ({
+        id: node.id,
+        type: node.type,
+        position: node.position,
+        data: node.data ?? {},
+    }))
+
+    http.edges = edges.value.map((edge) => ({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        sourceHandle: edge.sourceHandle ?? null,
+        targetHandle: edge.targetHandle ?? null,
+    }))
+
+    http.post('/workflows', {
+        onError: (errors) => {
+            console.log(errors)
+        },
+    })
+}
+
+const isSaveBtnDisabled = computed(() => {
+    if(
+        nodes.value.find(node => node.type === 'input-file') &&
+        nodes.value.find(node => node.type === 'output-file') &&
+        workflowName.value.trim().length > 0 && edges.value.length > 0
+    ) {
+        return false
+    }
+
+    return true;
+})
+
 function handleConnect(e) {
-    console.log(e)
+
+    if (e.source === e.target) {
+        return;
+    }
+
+    if (!e.sourceHandle.includes('out') || !e.targetHandle.includes('in')) {
+        return;
+    }
+
+    const edgeId = [
+        e.source,
+        e.target
+    ].sort().join()
+
+    const edge = {
+        id: edgeId,
+        source: e.source,
+        target: e.target
+    }
+
+    addEdge(edge)
 }
 
 </script>
@@ -98,7 +168,7 @@ function handleConnect(e) {
                     <p class="max-w-2xl">Create a reusable workflow to transform your datasets. Add a name and optional description, then use the visual builder to connect steps like filtering, sorting, selecting columns, and limiting results.</p>
                 </CardDescription>
                 <CardAction>
-                    <Button class="cursor-pointer" disabled>
+                    <Button form="workflow_form" class="cursor-pointer" :disabled="isSaveBtnDisabled">
                         <SaveIcon></SaveIcon>
                         Save Workflow
                     </Button>
@@ -123,7 +193,7 @@ function handleConnect(e) {
                                     <FilterNode v-bind="specialNodeProps" />
                                 </template>
                                 <template #node-select="specialNodeProps">
-                                    <SelectNode v-bind="specialNodeProps" />
+                                    <SelectNode :nodeProps="specialNodeProps" />
                                 </template>
                                 <template #node-limit="specialNodeProps">
                                     <LimitNode v-bind="specialNodeProps" />
@@ -139,12 +209,13 @@ function handleConnect(e) {
                     <ResizableHandle class="mx-5"/>
                     <ResizablePanel>
                         <ScrollArea class="h-full">
-                            <Form @submit.prevent>
+                            <Form id="workflow_form" @submit.prevent="onSubmit">
                                 <FieldGroup class="col-start-4 col-span-full">
                                     <FieldSet>
                                         <Field>
                                             <FieldLabel for="workflow_name">Workflow Name</FieldLabel>
                                             <Input
+                                                v-model="workflowName"
                                                 id="workflow_name"
                                                 name="name"
                                                 placeholder="Choose a clear name that describes what this workflow does, such as “Top Customers Report” or “Clean Monthly Orders”."
@@ -154,6 +225,7 @@ function handleConnect(e) {
                                         <Field>
                                             <FieldLabel for="workflow_description">Workflow Description</FieldLabel>
                                             <Textarea
+                                                v-model="workflowDescription"
                                                 id="workflow_description"
                                                 name="description"
                                                 placeholder="Optionally describe the purpose of this workflow, the expected dataset structure, or when it should be used."

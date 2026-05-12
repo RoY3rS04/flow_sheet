@@ -13,14 +13,16 @@ import {
     CommandList
 } from "@/components/ui/command/index.js";
 import {cn} from "@/lib/utils.js";
-import {onMounted, ref, watch} from "vue";
+import {ref, watch} from "vue";
 import {useHttp} from "@inertiajs/vue3";
 import {Handle, NodeProps, Position} from "@vue-flow/core";
 import {useWorkflowStore} from "@/stores/workflow";
 import {ItemHeader} from "@/components/ui/item";
+import {Input} from "@/components/ui/input";
 
 const open = ref<boolean>(false);
 const label = ref<string>('');
+const selectAll = ref<boolean>(true)
 
 type Column = {
     name: string,
@@ -38,7 +40,9 @@ const http = useHttp({
     query: ''
 })
 
-const { changeNodeState, getInputNode } = useWorkflowStore()
+const { getInputNode, getNode, changeNodeState} = useWorkflowStore()
+
+const node = getNode(nodeProps.id)
 
 async function getDatasetColumns(datasetId: number): Promise<Column[]> {
     const data = await http.get(`/datasets/${datasetId}/columns`, {
@@ -50,15 +54,49 @@ async function getDatasetColumns(datasetId: number): Promise<Column[]> {
     return JSON.parse(data.columns) as Column[]
 }
 
-watch(getInputNode(), async () => {
+watch(
+    () => getInputNode()?.data?.datasetId ?? null,
+    async (datasetId, _previousDatasetId, onCleanup) => {
+        selectedColumns.value = [];
 
-    const inputNode = getInputNode();
+        if (!datasetId) {
+            columns.value = [];
+            return
+        }
 
-    columns.value = await getDatasetColumns(Number(inputNode.data.datasetId))
+        let cancelled = false;
+
+        onCleanup(() => {
+            cancelled = true;
+        });
+
+        const nextColumns = await getDatasetColumns(Number(datasetId));
+
+        if (!cancelled) {
+            columns.value = nextColumns;
+        }
+    },
+    {
+        immediate: true,
+    },
+)
+
+watch(selectAll, () => {
+    changeNodeState(node.id, {
+        ...node,
+        data: {
+            columns: selectAll ? 'all': columns.value
+        }
+    })
 })
 
-onMounted(async () => {
-    columns.value = await getDatasetColumns(Number(getInputNode().data.datasetId))
+watch(columns, () => {
+    changeNodeState(node.id, {
+        ...node,
+        data: {
+            columns: selectAll ? 'all': columns.value
+        }
+    })
 })
 
 </script>
@@ -73,7 +111,7 @@ onMounted(async () => {
         </ItemHeader>
         <ItemContent>
             <Popover v-model:open="open">
-                <PopoverTrigger as-child>
+                <PopoverTrigger :disabled="selectAll" as-child>
                     <Button
                         variant="outline"
                         role="combobox"
@@ -120,9 +158,13 @@ onMounted(async () => {
                     </Command>
                 </PopoverContent>
             </Popover>
+            <div class="flex gap-x-2 items-center mt-2">
+                <Label class="flex-2" for="select-all">Select all columns</Label>
+                <input v-model="selectAll" class="flex-1" id="select-all" type="checkbox"></input>
+            </div>
         </ItemContent>
-        <Handle type="target" :position="Position.Top"/>
-        <Handle type="source" :position="Position.Bottom"/>
+        <Handle id="select_in" type="target" :position="Position.Top"/>
+        <Handle id="select_out" type="source" :position="Position.Bottom"/>
     </Item>
 </template>
 

@@ -13,7 +13,7 @@ import {
     CommandList
 } from "@/components/ui/command/index.js";
 import {cn} from "@/lib/utils.js";
-import {onMounted, ref, watch} from "vue";
+import {ref, watch} from "vue";
 import {useHttp} from "@inertiajs/vue3";
 import {Handle, Position} from "@vue-flow/core";
 import {useWorkflowStore} from "@/stores/workflow";
@@ -26,6 +26,7 @@ const openOperator = ref<boolean>(false);
 const columnValue = ref<string>('');
 const operatorValue = ref<string>('');
 const operatorType = ref<string>('');
+const inputType = ref<string>('text');
 
 const http = useHttp({
     query: ''
@@ -52,29 +53,62 @@ async function getDatasetColumns(datasetId: number): Promise<Column[]> {
     return JSON.parse(data.columns) as Column[]
 }
 
-watch(getInputNode(), async () => {
+watch(
+    () => getInputNode()?.data?.datasetId ?? null,
+    async (datasetId, _previousDatasetId, onCleanup) => {
+        columnValue.value = '';
+        operatorType.value = '';
+        operatorValue.value = '';
 
-    columnValue.value = '';
-    operatorType.value = '';
-    operatorValue.value = '';
+        if (!datasetId) {
+            columns.value = [];
+            return
+        }
 
-    columns.value = await getDatasetColumns(Number(getInputNode().data.datasetId))
-})
+        let cancelled = false;
+
+        onCleanup(() => {
+            cancelled = true;
+        });
+
+        const nextColumns = await getDatasetColumns(Number(datasetId));
+
+        if (!cancelled) {
+            columns.value = nextColumns;
+            console.log(columns.value)
+        }
+    },
+    {
+        immediate: true,
+    },
+)
+
+function getInputType(): string {
+
+    const selectedColumn = columns.value.find(col => col.name === columnValue.value);
+
+    if (!selectedColumn) {
+        return 'text'
+    }
+
+    switch (selectedColumn.type) {
+        case 'float':
+        case 'integer':
+            return 'number';
+        case 'string': return 'text';
+        case 'date': return 'date';
+        case 'datetime': return  'datetime-local';
+        case 'boolean': return 'checkbox';
+        default:
+            return 'text';
+    }
+
+}
 
 watch(columnValue, () => {
     operatorType.value = columns.value.find(col => col.name === columnValue.value)?.type ?? '';
+    inputType.value = getInputType()
 });
-
-onMounted(() => {
-
-    const inputNode = getInputNode()
-
-    if (!inputNode?.data) {
-        return
-    }
-
-    getDatasetColumns(Number(getInputNode().data.datasetId))
-})
 
 </script>
 
@@ -173,10 +207,15 @@ onMounted(() => {
                     </Command>
                 </PopoverContent>
             </Popover>
-            <Input placeholder="value"/>
+            <Input
+                :type="inputType"
+                :min="inputType === 'number' ? 0: null"
+                placeholder="value"
+                :disabled="operatorValue === 'notNull'"
+            />
         </ItemContent>
-        <Handle type="target" :position="Position.Top"/>
-        <Handle type="source" :position="Position.Bottom"/>
+        <Handle id="filter_in" type="target" :position="Position.Top"/>
+        <Handle id="filter_out" type="source" :position="Position.Bottom"/>
     </Item>
 </template>
 

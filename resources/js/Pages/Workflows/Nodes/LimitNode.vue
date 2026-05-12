@@ -18,7 +18,8 @@ import {Handle, Position} from "@vue-flow/core";
             <Input type="number" min="1" name="limit" placeholder="Limit the rows you want to get from the workflow"></Input>
         </ItemContent>
     </Item>
-    <Handle type="target" :position="Position.Top"></Handle>
+    <Handle id="limit_in" type="target" :position="Position.Top"></Handle>
+    <Handle id="limit_out" type="source" :position="Position.Bottom"></Handle>
 </template>
 
 <style scoped>

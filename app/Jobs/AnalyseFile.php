@@ -63,6 +63,10 @@ class AnalyseFile implements ShouldQueue
      */
     private function inferColumnType(array $rows, string $header): string
     {
+        if ($this->isBooleanColumn($rows, $header)) {
+            return 'boolean';
+        }
+
         $types = collect($rows)
             ->map(fn (array $row): string => $this->inferValueType($row[$header] ?? null))
             ->reject(fn (string $type): bool => $type === 'null')
@@ -79,6 +83,10 @@ class AnalyseFile implements ShouldQueue
 
         if ($types->every(fn (string $type): bool => in_array($type, ['integer', 'float'], true))) {
             return 'float';
+        }
+
+        if ($types->every(fn (string $type): bool => in_array($type, ['date', 'datetime'], true))) {
+            return $types->contains('datetime') ? 'datetime' : 'date';
         }
 
         return 'string';
@@ -128,6 +136,67 @@ class AnalyseFile implements ShouldQueue
             return 'float';
         }
 
+        if ($this->looksLikeDateTimeString($trimmed)) {
+            return str_contains($trimmed, ':') ? 'datetime' : 'date';
+        }
+
         return 'string';
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $rows
+     */
+    private function isBooleanColumn(array $rows, string $header): bool
+    {
+        $values = collect($rows)
+            ->map(fn (array $row): mixed => $row[$header] ?? null)
+            ->reject(fn (mixed $value): bool => $this->inferValueType($value) === 'null')
+            ->values();
+
+        if ($values->isEmpty()) {
+            return false;
+        }
+
+        return $values->every(fn (mixed $value): bool => $this->isBooleanLikeValue($value));
+    }
+
+    private function isBooleanLikeValue(mixed $value): bool
+    {
+        if (is_bool($value)) {
+            return true;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return in_array((string) $value, ['0', '1'], true);
+        }
+
+        if (! is_string($value)) {
+            return false;
+        }
+
+        return in_array(strtolower(trim($value)), ['0', '1', 'true', 'false', 'yes', 'no'], true);
+    }
+
+    private function looksLikeDateTimeString(string $value): bool
+    {
+        if (! preg_match('/[\/\-\:T]/', $value)) {
+            return false;
+        }
+
+        $timestamp = strtotime($value);
+
+        if ($timestamp === false) {
+            return false;
+        }
+
+        $parsed = date_parse($value);
+
+        if (($parsed['error_count'] ?? 0) > 0) {
+            return false;
+        }
+
+        return ($parsed['year'] ?? false) !== false
+            && ($parsed['month'] ?? false) !== false
+            && ($parsed['day'] ?? false) !== false;
     }
 }

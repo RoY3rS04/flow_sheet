@@ -18,4 +18,7 @@ export const AvailableOperatorsForColumnType = {
     string: ['>', '<', '>=', '<=', '=', 'startsWith', 'endsWith', 'contains', 'notNull'],
     integer: ['>', '<', '>=', '<=', '=', 'notNull'],
     float: ['>', '<', '>=', '<=', '=', 'notNull'],
+    boolean: ['notNull', 'is'],
+    date: ['>', '<', '>=', '<=', '=', 'notNull'],
+    datetime: ['>', '<', '>=', '<=', '=', 'notNull']
 }
